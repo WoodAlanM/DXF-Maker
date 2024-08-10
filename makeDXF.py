@@ -1,7 +1,16 @@
 import cv2
 import numpy as np
 from QRscanner import detect_qr_codes_pyzbar
-from PIL import Image
+from PIL import Image, ImageDraw
+
+QR_CORNER_OFFSET = 32
+
+corner_positions = {
+        "top-left": None,
+        "top-right": None,
+        "bottom-left": None,
+        "bottom-right": None
+}
 
 
 def perspective_transform(image_path, positions):
@@ -41,25 +50,17 @@ def find_contours(edges):
 
 
 def get_corner_positions(image_path):
-    qrData = detect_qr_codes_pyzbar(image_path)
-    print(qrData)
+    qr_data = detect_qr_codes_pyzbar(image_path)
 
     grid_width = 0
     grid_height = 0
-    corner_positions = {
-        "top-left": None,
-        "top-right": None,
-        "bottom-left": None,
-        "bottom-right": None
-    }
 
     # This gets the corners from each qr code, and also collects the
     # width and height from the original grid generation.
-    for corner, polygon in qrData.items():
+    for corner, polygon in qr_data.items():
         # Find top left of image
         if "Corner1" in corner:
             string_list = corner.split("&")
-            print(string_list)
             for value in string_list:
                 if "w=" in value:
                     value_list = value.split("=")
@@ -175,22 +176,87 @@ def get_corner_positions(image_path):
                 corner_positions["bottom-right"] = right_most_points[0]
             print(corner_positions["bottom-right"])
 
-    print("****************************************")
+    # Corners turned out seemingly correct
+    print("**********************************************")
     print("top-left corner: " + str(corner_positions["top-left"]))
     print("top-right corner: " + str(corner_positions["top-right"]))
     print("bottom-left corner: " + str(corner_positions["bottom-left"]))
     print("bottom-right corner: " + str(corner_positions["bottom-right"]))
-    print("****************************************")
+    print("**********************************************")
+
+    # Add 2.5 mm to each corner outward toward the outside
+    # edge of the picture. This will compensate for the
+    # Smaller size of the qr codes as compared to the squares
+    # Fix top left corner
+    top_left_corner = corner_positions["top-left"]
+    top_left_x = top_left_corner[0]
+    top_left_y = top_left_corner[1]
+    top_left_x = top_left_x - QR_CORNER_OFFSET
+    top_left_y = top_left_y - QR_CORNER_OFFSET
+    corner_point = [top_left_x, top_left_y]
+    corner_positions["top-left"] = corner_point
+
+    top_right_corner = corner_positions["top-right"]
+    top_right_x = top_right_corner[0]
+    top_right_y = top_right_corner[1]
+    top_right_x = top_right_x + QR_CORNER_OFFSET
+    top_right_y = top_right_y - QR_CORNER_OFFSET
+    corner_point = [top_right_x, top_right_y]
+    corner_positions["top-right"] = corner_point
+
+    bottom_left_corner = corner_positions["bottom-left"]
+    bottom_left_x = bottom_left_corner[0]
+    bottom_left_y = bottom_left_corner[1]
+    bottom_left_x = bottom_left_x - QR_CORNER_OFFSET
+    bottom_left_y = bottom_left_y + QR_CORNER_OFFSET
+    corner_point = [bottom_left_x, bottom_left_y]
+    corner_positions["bottom-left"] = corner_point
+
+    bottom_right_corner = corner_positions["bottom-right"]
+    bottom_right_x = bottom_right_corner[0]
+    bottom_right_y = bottom_right_corner[1]
+    bottom_right_x = bottom_right_x + QR_CORNER_OFFSET
+    bottom_right_y = bottom_right_y + QR_CORNER_OFFSET
+    corner_point = [bottom_right_x, bottom_right_y]
+    corner_positions["bottom-right"] = corner_point
+
+    print("**********************************************")
+    print("top-left corner: " + str(corner_positions["top-left"]))
+    print("top-right corner: " + str(corner_positions["top-right"]))
+    print("bottom-left corner: " + str(corner_positions["bottom-left"]))
+    print("bottom-right corner: " + str(corner_positions["bottom-right"]))
+    print("**********************************************")
+
+    # Test new positions
+    # img = Image.open(image_path)
+    #
+    # draw = ImageDraw.Draw(img)
+    #
+    # points = [corner_positions["top-left"], corner_positions["top-right"],
+    #           corner_positions["bottom-left"], corner_positions["bottom-right"]]
+    #
+    # radius = 20
+    #
+    # for point in points:
+    #     left_up_point = (point[0] - radius, point[1] - radius)
+    #     right_down_point = (point[0] + radius, point[1] + radius)
+    #     draw.ellipse([left_up_point, right_down_point], fill='blue', outline='blue')
+    #
+    # img.save("Test-image-with-points.png")
+
+    # Height and width of the grid was also retrieved correctly
+    # print("Grid width = " + str(grid_width))
+    # print("Grid height = " + str(grid_height))
 
 
-    print("Grid width = " + str(grid_width))
-    print("Grid height = " + str(grid_height))
+def save_image(new_image_path, image):
+    image.save(new_image_path)
 
 
 if __name__ == "__main__":
     get_corner_positions("Test-Images/grid-with-pliers-200x100.jpg")
-
-    # fixed_perspective_image = perspective_transform('Test-Images/grid-with-pliers-200x100.jpg', positions)
+    fixed_perspective_image = perspective_transform('Test-Images/grid-with-pliers-200x100.jpg', corner_positions)
+    save_image("fixed-perspective-image.png", fixed_perspective_image)
     # cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
     # edges = detect_edges(fixed_perspective_image)
     # cv2.imwrite('Manipulated-Scans/edges.jpg', edges)

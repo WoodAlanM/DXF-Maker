@@ -13,9 +13,9 @@ def detect_qr_codes_pyzbar(image_path):
 
     if decoded_objects:
         for obj in decoded_objects:
-            print(f"Type: {obj.type}")
-            print(f"Data: {obj.data.decode('utf-8')}")
-            print(f"Position: {obj.polygon}\n")
+            # print(f"Type: {obj.type}")
+            # print(f"Data: {obj.data.decode('utf-8')}")
+            # print(f"Position: {obj.polygon}\n")
 
             data[obj.data.decode('utf-8')] = obj.polygon
 
