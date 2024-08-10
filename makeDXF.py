@@ -69,13 +69,10 @@ def get_corner_positions(image_path):
                     grid_height = value_list[1]
             # Get qr polygon coordinates
             qr_corners = polygon
-
             min_x = 0
             min_y = 0
-
             top_left_points = qr_corners
             left_most_points = []
-
             for i in range(2):
                 lowest_x = 0
                 for j in range(len(top_left_points)):
@@ -90,32 +87,104 @@ def get_corner_positions(image_path):
                             min_y = qr_corners[j][1]
                 left_most_points.append(qr_corners[lowest_x])
                 del top_left_points[lowest_x]
+            min_y = left_most_points[0][1]
+            if left_most_points[1][1] < min_y:
+                corner_positions["top-left"] = left_most_points[1]
+            else:
+                corner_positions["top-left"] = left_most_points[0]
+            # Set top left position
+            print(corner_positions["top-left"])
+        # Find top right corner
+        elif "Corner2" in corner:
+            qr_corners = polygon
+            max_x = 0
+            min_y = 0
+            top_right_points = qr_corners
+            right_most_points = []
+            for i in range(2):
+                greatest_x = 0
+                for j in range(len(top_right_points)):
+                    if j == 0:
+                        max_x = qr_corners[0][0]
+                        min_y = qr_corners[0][1]
+                        continue
+                    else:
+                        if qr_corners[j][0] > max_x:
+                            greatest_x = j
+                            max_x = qr_corners[j][0]
+                            min_y = qr_corners[j][1]
+                right_most_points.append(qr_corners[greatest_x])
+                del top_right_points[greatest_x]
+            min_y = right_most_points[0][1]
+            if right_most_points[1][1] < min_y:
+                corner_positions["top-right"] = right_most_points[1]
+            else:
+                corner_positions["top-right"] = right_most_points[0]
+            print(corner_positions["top-right"])
+        # Get bottom left corner
+        elif "Corner3" in corner:
+            qr_corners = polygon
+            min_x = 0
+            max_y = 0
+            bottom_left_points = qr_corners
+            left_most_points = []
+            for i in range(2):
+                lowest_x = 0
+                for j in range(len(bottom_left_points)):
+                    if j == 0:
+                        min_x = qr_corners[0][0]
+                        max_y = qr_corners[0][1]
+                        continue
+                    else:
+                        if qr_corners[j][0] < min_x:
+                            lowest_x = j
+                            min_x = qr_corners[j][0]
+                            max_y = qr_corners[j][1]
+                left_most_points.append(qr_corners[lowest_x])
+                del bottom_left_points[lowest_x]
+            max_y = left_most_points[0][1]
+            if left_most_points[1][1] > max_y:
+                corner_positions["bottom-left"] = left_most_points[1]
+            else:
+                corner_positions["bottom-left"] = left_most_points[0]
+            print(corner_positions["bottom-left"])
+        elif "Corner4" in corner:
+            qr_corners = polygon
+            max_x = 0
+            max_y = 0
+            bottom_right_points = qr_corners
+            right_most_points = []
+            for i in range(2):
+                greatest_x = 0
+                for j in range(len(bottom_right_points)):
+                    if j == 0:
+                        max_x = qr_corners[0][0]
+                        max_y = qr_corners[0][1]
+                        continue
+                    else:
+                        if qr_corners[j][0] > max_x:
+                            greatest_x = j
+                            max_x = qr_corners[j][0]
+                            max_y = qr_corners[j][1]
+                right_most_points.append(qr_corners[greatest_x])
+                del bottom_right_points[greatest_x]
+            max_y = right_most_points[0][1]
+            if right_most_points[1][1] > max_y:
+                corner_positions["bottom-right"] = right_most_points[1]
+            else:
+                corner_positions["bottom-right"] = right_most_points[0]
+            print(corner_positions["bottom-right"])
 
-            print(left_most_points)
+    print("****************************************")
+    print("top-left corner: " + str(corner_positions["top-left"]))
+    print("top-right corner: " + str(corner_positions["top-right"]))
+    print("bottom-left corner: " + str(corner_positions["bottom-left"]))
+    print("bottom-right corner: " + str(corner_positions["bottom-right"]))
+    print("****************************************")
 
-        #     # Set top-left position
-        #     corner_positions["top-left"] = (min_x, min_y)
-        # elif "Corner2" in corner:
-        #     qr_corners = polygon
-        #
-        #     min_x = 0
-        #     min_y = 0
-        #
-        #     for i in range(4):
-        #         if i == 0:
-        #             min_x = qr_corners[0][0]
-        #             min_y = qr_corners[0][1]
-        #             continue
-        #         else:
-        #             if qr_corners[i][0] > min_x:
-        #                 min_x = qr_corners[i][0]
-        #                 min_y = qr_corners[i][1]
-        #
-        #
-        #     print("lowest x: " + str(min_x) + " lowest y: " + str(min_y))
-        #
-        #     print("Grid width = " + str(grid_width))
-        #     print("Grid height = " + str(grid_height))
+
+    print("Grid width = " + str(grid_width))
+    print("Grid height = " + str(grid_height))
 
 
 if __name__ == "__main__":
