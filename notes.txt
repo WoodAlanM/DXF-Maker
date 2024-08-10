@@ -1,0 +1,1 @@
+Make only top-left corner on grid have a triangle for orienting picture
