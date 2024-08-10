@@ -6,15 +6,17 @@ from PIL import Image, ImageDraw
 QR_CORNER_OFFSET = 32
 
 corner_positions = {
-        "top-left": None,
-        "top-right": None,
-        "bottom-left": None,
-        "bottom-right": None
+        "top-left": [],
+        "top-right": [],
+        "bottom-left": [],
+        "bottom-right": []
 }
 
 
 def perspective_transform(image_path, positions):
     image = cv2.imread(image_path)
+
+    rotated_image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     # Assuming positions are in the correct order (top-left, top-right, bottom-right, bottom-left)
     pts1 = np.array([positions['top-left'], positions['top-right'],
@@ -30,15 +32,44 @@ def perspective_transform(image_path, positions):
     matrix = cv2.getPerspectiveTransform(pts1, pts2)
 
     # Apply the perspective transformation
-    transformed_image = cv2.warpPerspective(image, matrix, (int(width), int(height)))
+    transformed_image = cv2.warpPerspective(rotated_image, matrix, (int(width), int(height)))
 
     return transformed_image
 
 
 def detect_edges(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = cv2.Canny(blurred, 50, 150)
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # This is for ignoring black
+    # mask = cv2.inRange(image, np.array([1, 1, 1]), np.array([255, 255, 255]))
+
+    # These masks are for yellow and blue
+
+    # Convert the image to the HSV color space
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # Define the range for yellow color in HSV
+    lower_yellow = np.array([20, 100, 100])
+    upper_yellow = np.array([30, 255, 255])
+
+    # Define the range for blue color in HSV
+    lower_blue = np.array([100, 150, 0])
+    upper_blue = np.array([140, 255, 255])
+
+    # Create masks for yellow and blue colors
+    mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    # Combine the masks
+    combined_mask = cv2.bitwise_or(mask_yellow, mask_blue)
+
+    # Invert the combined mask to exclude yellow and blue areas
+    mask_inv = cv2.bitwise_not(combined_mask)
+
+    masked_gray = cv2.bitwise_and(image, image, mask=mask_inv)
+
+    edges = cv2.Canny(masked_gray, 50, 150)
+
     return edges
 
 # Example usage
@@ -249,15 +280,48 @@ def get_corner_positions(image_path):
     # print("Grid height = " + str(grid_height))
 
 
-def save_image(new_image_path, image):
-    image.save(new_image_path)
+def save_cv2_image(new_image_path, image):
+    cv2.imwrite(new_image_path, image)
+
+
+def convert_png_to_jpg(png_image_path, jpg_image_path):
+    # Open the PNG image
+    with Image.open(png_image_path) as img:
+        # Convert image to RGB mode (JPG does not support alpha channel)
+        rgb_img = img.convert("RGB")
+        # Save the image as JPG
+        rgb_img.save(jpg_image_path, format="JPEG")
+
+
+def detect_object_contours(image_path):
+    # Read the image
+    img = cv2.imread(image_path)
+
+    # Convert to grayscale
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Apply Gaussian blur to reduce noise and improve contour detection
+    blurred_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
+
+    # Apply Canny edge detection
+    edges = cv2.Canny(blurred_img, 50, 150)
+
+    # Find contours
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Draw contours on a blank image
+    contour_img = np.zeros_like(gray_img)
+    cv2.drawContours(contour_img, contours, -1, (255), thickness=cv2.FILLED)
+
+    return contours, contour_img
 
 
 if __name__ == "__main__":
-    get_corner_positions("Test-Images/grid-with-pliers-200x100.jpg")
-    fixed_perspective_image = perspective_transform('Test-Images/grid-with-pliers-200x100.jpg', corner_positions)
-    save_image("fixed-perspective-image.png", fixed_perspective_image)
-    # cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
+    get_corner_positions("Test-Images/grid-with-pliers-by-200x100.jpg")
+    fixed_perspective_image = perspective_transform('Test-Images/grid-with-pliers-by-200x100.jpg', corner_positions)
+    cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
+
+
     # edges = detect_edges(fixed_perspective_image)
     # cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
     # contours = find_contours(edges)

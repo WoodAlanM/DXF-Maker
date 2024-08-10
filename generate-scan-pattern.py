@@ -6,23 +6,18 @@ height = 0
 
 PIXELS_PER_MM = 38
 SQUARE_SIZE = PIXELS_PER_MM * 10
+SQUARE_COLOR_1 = "blue"
+SQUARE_COLOR_2 = "yellow"
 
 
 def add_corner_triangles(image_path, triangle_size=15):
     img = Image.open(image_path)
-    img_width, img_height = img.size
 
     draw = ImageDraw.Draw(img)
 
     top_left = [(0, 0), (triangle_size, 0), (0, triangle_size)]
-    top_right = [(img_width, 0), (img_width - triangle_size, 0), (img_width, triangle_size)]
-    bottom_left = [(0, img_height), (triangle_size, img_height), (0, img_height - triangle_size)]
-    bottom_right = [(img_width, img_height), (img_width - triangle_size, img_height), (img_width, img_height - triangle_size)]
 
-    draw.polygon(top_left, fill="black")
-    draw.polygon(top_right, fill="black")
-    draw.polygon(bottom_left, fill="black")
-    draw.polygon(bottom_right, fill="black")
+    draw.polygon(top_left, fill=SQUARE_COLOR_1)
 
     img.save("final_image.png")
 
@@ -54,14 +49,14 @@ def create_checkerboard(width_mm, height_mm, square_size_mm, output_path):
     print(square_size_px)
 
     # Create a blank white image
-    checkerboard = Image.new('RGB', (width_px, height_px), color='white')
+    checkerboard = Image.new('RGB', (width_px, height_px), color=SQUARE_COLOR_2)
     draw = ImageDraw.Draw(checkerboard)
 
     # Draw the checkerboard pattern
     for y in range(0, height_px, square_size_px):
         for x in range(0, width_px, square_size_px):
             if (x // square_size_px + y // square_size_px) % 2 == 0:
-                draw.rectangle([x, y, x + square_size_px, y + square_size_px], fill='black')
+                draw.rectangle([x, y, x + square_size_px, y + square_size_px], fill=SQUARE_COLOR_1)
 
     checkerboard.save(output_path)
 

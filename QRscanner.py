@@ -1,6 +1,8 @@
 from pyzbar.pyzbar import decode
 from PIL import Image, ImageDraw
 
+DO_RETURN = True
+
 
 def detect_qr_codes_pyzbar(image_path):
     data = {}
@@ -13,9 +15,9 @@ def detect_qr_codes_pyzbar(image_path):
 
     if decoded_objects:
         for obj in decoded_objects:
-            # print(f"Type: {obj.type}")
-            # print(f"Data: {obj.data.decode('utf-8')}")
-            # print(f"Position: {obj.polygon}\n")
+            print(f"Type: {obj.type}")
+            print(f"Data: {obj.data.decode('utf-8')}")
+            print(f"Position: {obj.polygon}\n")
 
             data[obj.data.decode('utf-8')] = obj.polygon
 
@@ -25,4 +27,10 @@ def detect_qr_codes_pyzbar(image_path):
     else:
         print("No QR Code detected")
 
-    return data
+    if DO_RETURN:
+        return data
+
+
+if __name__ == "__main__":
+    DO_RETURN = False
+    detect_qr_codes_pyzbar("Test-Images/grid-with-pliers-by-200x100.jpg")
