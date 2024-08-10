@@ -8,9 +8,10 @@ PIXELS_PER_MM = 38
 SQUARE_SIZE = PIXELS_PER_MM * 10
 SQUARE_COLOR_1 = "blue"
 SQUARE_COLOR_2 = "yellow"
+BACKGROUND_COLOR = "white"
 
 
-def add_corner_triangles(image_path, triangle_size=15):
+def add_corner_triangle(image_path, triangle_size=15):
     img = Image.open(image_path)
 
     draw = ImageDraw.Draw(img)
@@ -29,7 +30,7 @@ def place_qr_on_image(rect_image_path, qr_file_paths, qr_positions, output_image
     # Open and resize the QR code images
     qr_images = [Image.open(qr_path).convert("RGBA") for qr_path in qr_file_paths]
 
-    qr_size_px = int(PIXELS_PER_MM * 2)  # Define size for QR codes, adjust if necessary
+    qr_size_px = int(PIXELS_PER_MM * 3)  # Define size for QR codes, adjust if necessary
 
     for qr_img, pos in zip(qr_images, qr_positions):
         qr_img = qr_img.resize((qr_size_px, qr_size_px))  # Resize QR code
@@ -61,6 +62,23 @@ def create_checkerboard(width_mm, height_mm, square_size_mm, output_path):
     checkerboard.save(output_path)
 
 
+def create_background_image(width_mm, height_mm, square_size_mm, output_path):
+    # Convert mm to pixels (assuming 100 pixels per mm for simplicity)
+    width_px = int(width_mm / 10 * PIXELS_PER_MM)
+    height_px = int(height_mm / 10 * PIXELS_PER_MM)
+    square_size_px = int(square_size_mm / 10 * PIXELS_PER_MM)
+
+    print(width_px)
+    print(height_px)
+    print(square_size_px)
+
+    # Create a blank white image
+    checkerboard = Image.new('RGB', (width_px, height_px), color=BACKGROUND_COLOR)
+    draw = ImageDraw.Draw(checkerboard)
+
+    checkerboard.save(output_path)
+
+
 def get_dimensions():
     global width, height
 
@@ -74,14 +92,14 @@ def get_dimensions():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     get_dimensions()
-    create_checkerboard(width, height, 10, 'checkerboard.png')
-
+    # create_checkerboard(width, height, 10, 'checkerboard.png')
+    create_background_image(width, height, 10, "background.png")
     qr_paths = ['Corner1.png', 'Corner3.png', 'Corner2.png', 'Corner4.png']
     # Locates the corners of the image
-    positions = [(0, 0), (0, int((height / 10 * PIXELS_PER_MM) - SQUARE_SIZE / 5)),
-                 (int((width / 10 * PIXELS_PER_MM) - SQUARE_SIZE / 5), 0),
-                 (int((width / 10 * PIXELS_PER_MM) - SQUARE_SIZE / 5),
-                  int((height / 10 * PIXELS_PER_MM) - SQUARE_SIZE / 5))]
+    positions = [(0, 0), (0, int((height / 10 * PIXELS_PER_MM) - SQUARE_SIZE / (10 / 3))),
+                 (int((width / 10 * PIXELS_PER_MM) - SQUARE_SIZE / (10 / 3)), 0),
+                 (int((width / 10 * PIXELS_PER_MM) - SQUARE_SIZE / (10 / 3)),
+                  int((height / 10 * PIXELS_PER_MM) - SQUARE_SIZE / (10 / 3)))]
 
-    place_qr_on_image("checkerboard.png", qr_paths, positions, 'image_w_qrs.png')
-    add_corner_triangles("image_w_qrs.png")
+    place_qr_on_image("background.png", qr_paths, positions, 'image_w_qrs.png')
+    add_corner_triangle("image_w_qrs.png")

@@ -72,8 +72,6 @@ def detect_edges(image):
 
     return edges
 
-# Example usage
-
 
 def find_contours(edges):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -317,13 +315,13 @@ def detect_object_contours(image_path):
 
 
 if __name__ == "__main__":
-    get_corner_positions("Test-Images/grid-with-pliers-by-200x100.jpg")
-    fixed_perspective_image = perspective_transform('Test-Images/grid-with-pliers-by-200x100.jpg', corner_positions)
+    get_corner_positions("Test-Images/20240810_144548.jpg")
+    fixed_perspective_image = perspective_transform('Test-Images/20240810_144548.jpg', corner_positions)
     cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
 
 
-    # edges = detect_edges(fixed_perspective_image)
-    # cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
-    # contours = find_contours(edges)
-    # cv2.drawContours(fixed_perspective_image, contours, -1, (0, 255, 0), 2)
-    # cv2.imwrite('Manipulated-Scans/contours.jpg', fixed_perspective_image)
+    edges = detect_edges(fixed_perspective_image)
+    cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
+    contours = find_contours(edges)
+    cv2.drawContours(fixed_perspective_image, contours, -1, (0, 255, 0), 2)
+    cv2.imwrite('Manipulated-Scans/contours.jpg', fixed_perspective_image)

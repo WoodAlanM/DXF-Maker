@@ -33,4 +33,4 @@ def detect_qr_codes_pyzbar(image_path):
 
 if __name__ == "__main__":
     DO_RETURN = False
-    detect_qr_codes_pyzbar("Test-Images/grid-with-pliers-by-200x100.jpg")
+    detect_qr_codes_pyzbar("Test-Images/20240810_144548.jpg")
