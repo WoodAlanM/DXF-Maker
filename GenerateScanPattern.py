@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw
-import qrgenerator
+import QRGenerator
 
 width = 0
 height = 0

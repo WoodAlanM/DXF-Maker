@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from QRscanner import detect_qr_codes_pyzbar
 from PIL import Image, ImageDraw
+from PerformMasking import create_object_mask, apply_mask_to_grid, extract_object_outline
+from RemoveAndContour import *
 
 QR_CORNER_OFFSET = 32
 
@@ -319,9 +321,15 @@ if __name__ == "__main__":
     fixed_perspective_image = perspective_transform('Test-Images/20240810_144548.jpg', corner_positions)
     cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
 
+    image_path = 'Manipulated-Scans/fixed_perspective_image.jpg'
+    mask, _ = create_object_mask(image_path)
+    outline_image, object_contours = extract_cleaned_outline(image_path, mask)
 
-    edges = detect_edges(fixed_perspective_image)
-    cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
-    contours = find_contours(edges)
-    cv2.drawContours(fixed_perspective_image, contours, -1, (0, 255, 0), 2)
-    cv2.imwrite('Manipulated-Scans/contours.jpg', fixed_perspective_image)
+    # Save or display the resulting outline image
+    cv2.imwrite("Manipulated-Scans/cleaned_outline.jpg", outline_image)
+
+    # edges = detect_edges(fixed_perspective_image)
+    # cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
+    # contours = find_contours(edges)
+    # cv2.drawContours(fixed_perspective_image, contours, -1, (0, 255, 0), 2)
+    # cv2.imwrite('Manipulated-Scans/contours.jpg', fixed_perspective_image)
