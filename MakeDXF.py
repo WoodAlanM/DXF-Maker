@@ -364,7 +364,7 @@ def outline_object(image_path):
     return contours
 
 
-def contours_to_dxf(contours, dxf_path, scale_factor=1.0):
+def contours_to_dxf(contours, dxf_path, epsilon_factor, scale_factor=1.0):
     # Create a new DXF document
     doc = ezdxf.new(dxfversion="R2010")
     doc.header['$INSUNITS'] = 4  # 4 corresponds to millimeters
@@ -372,9 +372,15 @@ def contours_to_dxf(contours, dxf_path, scale_factor=1.0):
 
     # Convert contours to polylines and add them to the DXF document
     for contour in contours:
-        scaled_contour = [(point[0][0] * scale_factor, point[0][1] * scale_factor) for point in contour]
+        # Simplify the contour to reduce the number of points
+        epsilon = epsilon_factor * cv2.arcLength(contour, True)
+        simplified_contour = cv2.approxPolyDP(contour, epsilon, True)
+
+        # Apply scaling to the simplified contour
+        scaled_contour = [(point[0][0] * scale_factor, point[0][1] * scale_factor) for point in simplified_contour]
+
+        # Add the simplified and scaled polyline to the DXF
         polyline = msp.add_lwpolyline(scaled_contour)
-        # polyline.is_closed = True  # Ensure the polyline is closed
 
     # Save the DXF file
     doc.saveas(dxf_path)
@@ -398,6 +404,6 @@ if __name__ == "__main__":
     # cv2.imwrite("Manipulated-Scans/whited_filled_corners.jpg", whited_corners)
 
     # Get contours to make dxf file.
-    outline_contours = outline_object("whited_corners.jpg")
+    outline_contours = outline_object("Manipulated-Scans/whited_filled_corners.jpg")
 
-    contours_to_dxf(outline_contours, "DXF-Output/pliers-dxf.dxf", 0.1)
+    contours_to_dxf(outline_contours, "DXF-Output/pliers-dxf.dxf", 0.0003, 0.1)
