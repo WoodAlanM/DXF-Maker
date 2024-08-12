@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from QRscanner import detect_qr_codes_pyzbar
 from PIL import Image, ImageDraw
-from PerformMasking import create_object_mask, apply_mask_to_grid, extract_object_outline
+from UsingMahotas import *
 from RemoveAndContour import *
+import ezdxf
 
 QR_CORNER_OFFSET = 32
 
@@ -316,20 +317,87 @@ def detect_object_contours(image_path):
     return contours, contour_img
 
 
+def make_corners_white(image_path, corner_size=330):
+    # Load the image
+    img = cv2.imread(image_path)
+
+    # Get image dimensions
+    height, width = img.shape[:2]
+
+    # Create a mask initialized to zeros (black)
+    mask = np.zeros((height, width, 3), dtype=np.uint8)
+
+    # Define the size of the corner squares
+    size = corner_size
+
+    # Make the corners white
+    mask[0:size, 0:size] = [255, 255, 255]  # Top-left corner
+    mask[0:size, -size:] = [255, 255, 255]  # Top-right corner
+    mask[-size:, 0:size] = [255, 255, 255]  # Bottom-left corner
+    mask[-size:, -size:] = [255, 255, 255]  # Bottom-right corner
+
+    # Apply the mask to the image to make corners white
+    img_with_white_corners = cv2.addWeighted(img, 1, mask, 1, 0)
+
+    return img_with_white_corners
+
+
+def outline_object(image_path):
+    # Load the image
+    img = cv2.imread(image_path)
+
+    # Convert to grayscale
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Apply a binary threshold to create a mask
+    _, binary_img = cv2.threshold(gray_img, 240, 255, cv2.THRESH_BINARY_INV)
+
+    # Find contours of the object
+    contours, _ = cv2.findContours(binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Create an empty image to draw the contours (optional visualization)
+    outline_img = np.ones_like(img) * 255  # White background
+    cv2.drawContours(outline_img, contours, -1, (0, 0, 0), 2)  # Draw in black
+
+    # cv2.imwrite("Manipulated-Scans/outlined_image.jpg", outline_img)
+
+    return contours
+
+
+def contours_to_dxf(contours, dxf_path, scale_factor=1.0):
+    # Create a new DXF document
+    doc = ezdxf.new(dxfversion="R2010")
+    doc.header['$INSUNITS'] = 4  # 4 corresponds to millimeters
+    msp = doc.modelspace()
+
+    # Convert contours to polylines and add them to the DXF document
+    for contour in contours:
+        scaled_contour = [(point[0][0] * scale_factor, point[0][1] * scale_factor) for point in contour]
+        polyline = msp.add_lwpolyline(scaled_contour)
+        # polyline.is_closed = True  # Ensure the polyline is closed
+
+    # Save the DXF file
+    doc.saveas(dxf_path)
+
+
 if __name__ == "__main__":
-    get_corner_positions("Test-Images/20240810_144548.jpg")
-    fixed_perspective_image = perspective_transform('Test-Images/20240810_144548.jpg', corner_positions)
-    cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
+    # This gets the corner positions of the qr codes, then changes the
+    # image perspective to fit a square image or rectangular.
+    # get_corner_positions("Test-Images/20240810_144548.jpg")
+    # fixed_perspective_image = perspective_transform('Test-Images/20240810_144548.jpg', corner_positions)
+    # cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
 
-    image_path = 'Manipulated-Scans/fixed_perspective_image.jpg'
-    mask, _ = create_object_mask(image_path)
-    outline_image, object_contours = extract_cleaned_outline(image_path, mask)
+    # Starting to work here
+    # image_path = 'Manipulated-Scans/fixed_perspective_image.jpg'
+    # contour_image = draw_mahotas_contours(image_path)
+    #
+    # # Save or display the result
+    # cv2.imwrite('Manipulated-Scans/mahotas_contour_image.jpg', contour_image)
 
-    # Save or display the resulting outline image
-    cv2.imwrite("Manipulated-Scans/cleaned_outline.jpg", outline_image)
+    # whited_corners = make_corners_white("Manipulated-Scans/mahotas_contour_image.jpg")
+    # cv2.imwrite("Manipulated-Scans/whited_filled_corners.jpg", whited_corners)
 
-    # edges = detect_edges(fixed_perspective_image)
-    # cv2.imwrite('Manipulated-Scans/edges.jpg', edges)
-    # contours = find_contours(edges)
-    # cv2.drawContours(fixed_perspective_image, contours, -1, (0, 255, 0), 2)
-    # cv2.imwrite('Manipulated-Scans/contours.jpg', fixed_perspective_image)
+    # Get contours to make dxf file.
+    outline_contours = outline_object("whited_corners.jpg")
+
+    contours_to_dxf(outline_contours, "DXF-Output/pliers-dxf.dxf", 0.1)
