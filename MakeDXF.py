@@ -8,6 +8,14 @@ import ezdxf
 
 QR_CORNER_OFFSET = 32
 
+PIXELS_PER_MM = .26458333333719
+INFLATED_PIXELS_PER_MM = PIXELS_PER_MM * 14
+LETTER_PAPER_SCANNER_WIDTH = 275
+LETTER_PAPER_SCANNER_HEIGHT = 215
+WIDTH_PX = int(LETTER_PAPER_SCANNER_WIDTH * INFLATED_PIXELS_PER_MM)
+HEIGHT_PX = int(LETTER_PAPER_SCANNER_HEIGHT * INFLATED_PIXELS_PER_MM)
+
+
 corner_positions = {
         "top-left": [],
         "top-right": [],
@@ -20,6 +28,23 @@ def perspective_transform(image_path, positions):
     image = cv2.imread(image_path)
 
     rotated_image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+    # # New stuff
+    # # Define the points for the transformation
+    # pts1 = np.array([positions['top-left'], positions['top-right'],
+    #                  positions['bottom-right'], positions['bottom-left']], dtype="float32")
+    #
+    # # Destination points for the perspective transformation
+    # pts2 = np.array([[0, 0], [WIDTH_PX, 0], [WIDTH_PX, HEIGHT_PX], [0, HEIGHT_PX]], dtype="float32")
+    #
+    # # Get the transformation matrix
+    # matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    #
+    # # Apply the perspective transformation
+    # transformed_image = cv2.warpPerspective(rotated_image, matrix, (WIDTH_PX, HEIGHT_PX))
+    #
+    # return transformed_image
+    # # End new stuff
 
     # Assuming positions are in the correct order (top-left, top-right, bottom-right, bottom-left)
     pts1 = np.array([positions['top-left'], positions['top-right'],
@@ -285,15 +310,6 @@ def save_cv2_image(new_image_path, image):
     cv2.imwrite(new_image_path, image)
 
 
-def convert_png_to_jpg(png_image_path, jpg_image_path):
-    # Open the PNG image
-    with Image.open(png_image_path) as img:
-        # Convert image to RGB mode (JPG does not support alpha channel)
-        rgb_img = img.convert("RGB")
-        # Save the image as JPG
-        rgb_img.save(jpg_image_path, format="JPEG")
-
-
 def detect_object_contours(image_path):
     # Read the image
     img = cv2.imread(image_path)
@@ -317,7 +333,7 @@ def detect_object_contours(image_path):
     return contours, contour_img
 
 
-def make_corners_white(image_path, corner_size=330):
+def make_corners_white(image_path, corner_size=100):
     # Load the image
     img = cv2.imread(image_path)
 
@@ -359,9 +375,44 @@ def outline_object(image_path):
     outline_img = np.ones_like(img) * 255  # White background
     cv2.drawContours(outline_img, contours, -1, (0, 0, 0), 2)  # Draw in black
 
+    # Might need this for the GUI part
     # cv2.imwrite("Manipulated-Scans/outlined_image.jpg", outline_img)
 
     return contours
+
+
+def resize_image(image_path, output_path, width, height):
+    image = cv2.imread(image_path)
+
+    resized_image = cv2.resize(image, (width, height))
+
+    cv2.imwrite(output_path, resized_image)
+
+
+# def contours_to_dxf(contours, dxf_path, epsilon_factor, scale_factor=1.0):
+#     # Create a new DXF document
+#     doc = ezdxf.new(dxfversion="R2010")
+#     doc.header['$INSUNITS'] = 4  # 4 corresponds to millimeters
+#     msp = doc.modelspace()
+#
+#     # Convert contours to polylines and add them to the DXF document
+#     for contour in contours:
+#         # Simplify the contour to reduce the number of points
+#         epsilon = epsilon_factor * cv2.arcLength(contour, True)
+#         simplified_contour = cv2.approxPolyDP(contour, epsilon, True)
+#
+#         # Apply scaling to the simplified contour
+#         scaled_contour = [(point[0][0], point[0][1] * scale_factor) for point in simplified_contour]
+#
+#         # Add the simplified and scaled polyline to the DXF
+#         polyline = msp.add_lwpolyline(scaled_contour)
+#
+#     # Save the DXF file
+#     doc.saveas(dxf_path)
+
+
+def flip_y_coordinate(contour):
+    return [(point[0][0], LETTER_PAPER_SCANNER_HEIGHT - point[0][1]) for point in contour]
 
 
 def contours_to_dxf(contours, dxf_path, epsilon_factor, scale_factor=1.0):
@@ -376,10 +427,12 @@ def contours_to_dxf(contours, dxf_path, epsilon_factor, scale_factor=1.0):
         epsilon = epsilon_factor * cv2.arcLength(contour, True)
         simplified_contour = cv2.approxPolyDP(contour, epsilon, True)
 
-        # Apply scaling to the simplified contour
-        scaled_contour = [(point[0][0] * scale_factor, point[0][1] * scale_factor) for point in simplified_contour]
+        flipped_contour = flip_y_coordinate(simplified_contour)
 
-        # Add the simplified and scaled polyline to the DXF
+        # Apply scaling to the flipped contour
+        scaled_contour = [(point[0] * scale_factor, point[1] * scale_factor) for point in flipped_contour]
+
+        # Add the simplified, scaled, and flipped polyline to the DXF
         polyline = msp.add_lwpolyline(scaled_contour)
 
     # Save the DXF file
@@ -389,21 +442,26 @@ def contours_to_dxf(contours, dxf_path, epsilon_factor, scale_factor=1.0):
 if __name__ == "__main__":
     # This gets the corner positions of the qr codes, then changes the
     # image perspective to fit a square image or rectangular.
-    # get_corner_positions("Test-Images/20240810_144548.jpg")
-    # fixed_perspective_image = perspective_transform('Test-Images/20240810_144548.jpg', corner_positions)
+    # get_corner_positions("Test-Images/Calipers.jpg")
+    # fixed_perspective_image = perspective_transform('Test-Images/Calipers.jpg', corner_positions)
     # cv2.imwrite('Manipulated-Scans/fixed_perspective_image.jpg', fixed_perspective_image)
 
-    # Starting to work here
-    # image_path = 'Manipulated-Scans/fixed_perspective_image.jpg'
+
+    # resize_image("Manipulated-Scans/fixed_perspective_image.jpg", "Manipulated-Scans/resize_fp_image.jpg", WIDTH_PX, HEIGHT_PX)
+
+    # # Starting to work here
+    # image_path = 'Manipulated-Scans/resize_fp_image.jpg'
     # contour_image = draw_mahotas_contours(image_path)
     #
     # # Save or display the result
     # cv2.imwrite('Manipulated-Scans/mahotas_contour_image.jpg', contour_image)
-
+    #
     # whited_corners = make_corners_white("Manipulated-Scans/mahotas_contour_image.jpg")
     # cv2.imwrite("Manipulated-Scans/whited_filled_corners.jpg", whited_corners)
+    #
+    # resize_image("Manipulated-Scans/whited_filled_corners.jpg", "Manipulated-Scans/resized_image_again.jpg", LETTER_PAPER_SCANNER_WIDTH, LETTER_PAPER_SCANNER_HEIGHT)
 
     # Get contours to make dxf file.
-    outline_contours = outline_object("Manipulated-Scans/whited_filled_corners.jpg")
+    outline_contours = outline_object("Manipulated-Scans/resized_image_again.jpg")
 
-    contours_to_dxf(outline_contours, "DXF-Output/pliers-dxf.dxf", 0.0003, 0.1)
+    contours_to_dxf(outline_contours, "DXF-Output/pliers-dxf.dxf", 0.0005)
